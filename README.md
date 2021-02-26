@@ -74,7 +74,7 @@ We now need to prep our code for deployment.
 
 Let's install the `dotenv` package to read environment variables:
 
-**_Note: This should be done along side your server code_**
+**_Note: This should be done along side your server code, or your base directory for your project._**
 
 ```sh
 npm install dotenv
@@ -186,3 +186,13 @@ We can monitor what our app is doing with the following command:
 ```sh
 heroku logs --tail
 ```
+
+## Recap
+
+In this lesson, we successfully deployed our MERN app to heroku. The server will render the `built` React app and handle the clients api requests.
+We used mongodb atlas to host our mongo database.
+
+## Resources
+
+- [Heroku Docs](https://devcenter.heroku.com/categories/heroku-architecture)
+- [Atlas Docs](https://docs.mongodb.com/)
