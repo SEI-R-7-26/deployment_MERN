@@ -1,6 +1,6 @@
 # Mern App Cloud Deployment
 
-### Objectives
+## Objectives
 
 - Deploy server to heroku
 - Deploy database to MongoDB Atlas
@@ -68,35 +68,21 @@ Select `connect your application`:
 
 Copy the connection url, do not lose this!
 
-## Creating A Heroku Project
-
-Head over to your heroku account and create a new app.
-
-Give your app a name.
-
-![](images/heroku-app)
-
-Once your app is created select `settings`.
-
-Select `Reveal Config Vars`.
-
-You'll add your environment variables in these fields.
-
-Ex:
-
-- Key:
-  `SALT_ROUNDS`
-
-- Value:
-  `12`
-
-Add a key called `DATABASE_URL` and set the value to your connection url from Atlas.
-
-Replace `<your password>` and `<dbname>` with the user password for your database and database name respectively, remember these must be an exact match.
-
-### Wiring Up Our Code
+## Wiring Up Our Code
 
 We now need to prep our code for deployment.
+
+Let's install the `dotenv` package to read environment variables:
+
+**_Note: This should be done along side your server code_**
+
+```sh
+npm install dotenv
+```
+
+```sh
+touch .env
+```
 
 In your `server.js`:
 
@@ -106,72 +92,97 @@ In your `server.js`:
   > const path = require('path')
   > ```
 
-- > Add the following along side your middleware:
-  >
-  > ```js
-  > app.use(express.static(path.join(__dirname, 'client', 'build')))
-  > ```
-  >
-  > **Note: If you are using `helmet` you **must** make this modification:**
-  >
-  > ```js
-  > app.use(helmet({ contentSecurityPolicy: false }))
-  > ```
-
 - > Telling Express to serve our react app:
   >
   > **NOTE**: **This should be added after your middleware**
   >
   > ```js
-  > app.get('*', (req, res) =>
-  >   res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'))
-  > )
+  > if (process.env.NODE_ENV === 'production') {
+  >   app.use(express.static(path.join(__dirname, 'client/build')))
+  >   app.get('*', (req, res) => {
+  >     res.sendFile(path.join(`${__dirname}/client/build/index.html`))
+  >   })
+  > }
   > ```
 
-In your `connection.js`:
-
-Add the following to your connection url:
+Modify your `db/index.js` to the following:
 
 ```js
-mongoose.connect(
+const mongoose = require('mongoose')
+require('dotenv').config()
+let dbUrl =
   process.env.NODE_ENV === 'production'
-    ? process.env.DATABASE_URL
-    : '<Your local db connection>'
-)
+    ? process.env.MONGODB_URI
+    : 'mongodb://127.0.0.1:27017/todo_tracker'
+mongoose
+  .connect(dbUrl, {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+    useFindAndModify: true
+  })
+  .then(() => {
+    console.log('Successfully connected to MongoDB.')
+  })
+  .catch((e) => {
+    console.error('Connection error', e.message)
+  })
+mongoose.set('debug', true)
+const db = mongoose.connection
+
+module.exports = db
 ```
 
-Finally in your `package.json`, add a new script in your `scripts` section:
+Finally in your `package.json` for your server, add a new script in your `scripts` section:
 
 ```json
     "build": "cd client && rm -rf build && npm install && npm run build"
 ```
 
-## Pointing Client To Our Api
+## Pointing The Client To Our Api
 
-In `client/src/services/apiclient.js`, modify your `baseURL`:
+In `client/src/globals`, modify your `BASE_URL`:
 
 ```js
-process.env.NODE_ENV === 'production'
-  ? `${window.location.origin}/api`
-  : '<your local backend server>/api'
+export const BASE_URL =
+  process.env.NODE_ENV === 'production'
+    ? `${window.location.origin}`
+    : 'http://localhost:3001'
 ```
 
-## Deploying Our Project
+## Initializing A Heroku App
 
-In your `Heroku` account select the deploy tab and select `connect to github`. If prompted to sign in go ahead and do so. You should now have a field to search repos:
+In your project folder type in the following command:
 
-![Heroku-Github](images/heroku-github.png)
+```sh
+  heroku create
+```
 
-Search For your project repo and click on `connect`.
+This will create a heroku app for you.
 
-You can now set up automatic deploys:
+Next we'll add our mongo db connection string to heroku for our Atlas Daatabase:
 
-![Deploy](images/deploy.png)
+```sh
+heroku config:set MONGODB_URI='mongodb+srv://<username>:<database_password>@<cluster>.i57hr.mongodb.net/<database_name>?retryWrites=true&w=majority'
+```
 
-Select `Enable Automatic Deploy` and make sure it's pointing to your `main` branch.
+Replace `<your password>` and `<dbname>` with the user password for your database and database name respectively, remember these must be an exact match.
 
-Now in your project folder, `add`, `commit` and `push` your changes and a build should kick off on heroku!
+Finally we'll add, commit and push our changes to heroku:
 
-You can monitor progress in heroku's activity tab!
+```sh
+git add .
+git commit -m <some message>
+git push heroku main
+```
 
-Once the build is finished you can open your app by using the `Open App` button.
+The `git push heroku main` will only push the changes to heroku. To push them to github enter the following:
+
+```sh
+git push
+```
+
+We can monitor what our app is doing with the following command:
+
+```sh
+heroku logs --tail
+```
