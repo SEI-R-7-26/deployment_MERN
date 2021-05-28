@@ -79,6 +79,7 @@ Let's install the `dotenv` package to read environment variables:
 ```sh
 npm install dotenv
 ```
+**NOTE: Only do this step if you have environment variables**
 
 ```sh
 touch .env
@@ -94,7 +95,7 @@ In your `server.js`:
 
 - > Telling Express to serve our react app:
   >
-  > **NOTE**: **This should be added after your middleware**
+  > **NOTE**: **This should be added after your middleware and above `app.listen`**
   >
   > ```js
   > if (process.env.NODE_ENV === 'production') {
@@ -109,11 +110,10 @@ Modify your `db/index.js` to the following:
 
 ```js
 const mongoose = require('mongoose')
-require('dotenv').config()
-let dbUrl =
-  process.env.NODE_ENV === 'production'
-    ? process.env.MONGODB_URI
-    : 'mongodb://127.0.0.1:27017/todo_tracker'
+require('dotenv').config() // Add this line
+
+let dbUrl = process.env.NODE_ENV === 'production' ? process.env.MONGODB_URI : 'mongodb://127.0.0.1:27017/todo_tracker'
+
 mongoose
   .connect(dbUrl, {
     useUnifiedTopology: true,
@@ -132,7 +132,7 @@ const db = mongoose.connection
 module.exports = db
 ```
 
-Finally in your `package.json` for your server, add a new script in your `scripts` section:
+Finally in your `package.json` for your **server**, add a **new** script in your `scripts` section:
 
 ```json
     "build": "cd client && rm -rf build && npm install && npm run build"
@@ -159,13 +159,13 @@ In your project folder type in the following command:
 
 This will create a heroku app for you.
 
-Next we'll add our mongo db connection string to heroku for our Atlas Daatabase:
+Next we'll add our mongo db connection string to heroku for our Atlas Database:
+
+**Replace `<your password>` and `<dbname>` with the user password for your database and database name respectively, remember these must be an exact match.**
 
 ```sh
 heroku config:set MONGODB_URI='mongodb+srv://<username>:<database_password>@<cluster>.i57hr.mongodb.net/<database_name>?retryWrites=true&w=majority'
 ```
-
-Replace `<your password>` and `<dbname>` with the user password for your database and database name respectively, remember these must be an exact match.
 
 Finally we'll add, commit and push our changes to heroku:
 
